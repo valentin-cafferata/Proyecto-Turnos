@@ -7,4 +7,3 @@ const clases = [
 export const getClases = (req, res) => {
     res.status(200).json(clases);
 }
-
