@@ -5,6 +5,6 @@ const clases = [
 ]
 
 export const getClases = (req, res) => {
-    res.status(200).json(ejemplosController);
+    res.status(200).json(clases);
 }
 
