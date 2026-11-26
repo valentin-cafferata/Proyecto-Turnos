@@ -7,3 +7,14 @@ const clases = [
 export const getClases = (req, res) => {
     res.status(200).json(clases);
 }
+
+export const getClaseById = (req, res) => {
+    const id = Number(req.params.id);
+    const claseEncontrada = clases.find((clase) => clase.id === id);
+
+    if(!claseEncontrada){
+        return res.status(404).json({ mensaje: 'Clase no encontrada' });
+    }
+
+    return res.status(200).json(claseEncontrada);
+}
