@@ -4,6 +4,8 @@ const clases = [
     {id: 3, nombre: "Spinning", instructor: "juan", horario:"Miércoles 20:00", cupoMaximo: 8, activo: false}
 ]
 
+let nextId = clases.length + 1;
+
 export const getClases = (req, res) => {
     res.status(200).json(clases);
 }
@@ -20,18 +22,18 @@ export const getClaseById = (req, res) => {
 }
 // 3. CREATE: Crear una clase nueva (Va DEBAJO de getClaseById)
 export const createClase = (req, res) => {
-  const { nombre, instructor, horario, cupoMaximo, activo } = req.body;
+  const { nombre, instructor, horario, cupoMaximo, activo } = req.body || {};
 
   if (!nombre || !instructor || !horario) {
     return res.status(400).json({ mensaje: 'Faltan datos obligatorios (nombre, instructor, horario)' });
   }
 
   const nuevaClase = {
-    id: clases.length + 1,
+    id: nextId++,
     nombre,
     instructor,
     horario,
-    cupoMaximo: cupoMaximo || 10,
+    cupoMaximo: cupoMaximo ?? 10,
     activo: activo !== undefined ? activo : true
   };
 
@@ -48,7 +50,7 @@ export const updateClase = (req, res) => {
     return res.status(404).json({ mensaje: 'Clase no encontrada' });
   }
 
-  const { nombre, instructor, horario, cupoMaximo, activo } = req.body;
+  const { nombre, instructor, horario, cupoMaximo, activo } = req.body || {};
 
   claseEncontrada.nombre = nombre || claseEncontrada.nombre;
   claseEncontrada.instructor = instructor || claseEncontrada.instructor;
