@@ -1,6 +1,7 @@
-import express from 'express';
-import 'dotenv/config';
-import clasesRoutes from './routes/clases.routes.js';
+import express from "express";
+import "dotenv/config";
+import clasesRoutes from "./routes/clases.routes.js";
+import reservasRoutes from "./routes/reservas.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,14 +10,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // Ruta de prueba para verificar que el servidor responde
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    mensaje: 'Servidor del Gestor de Turnos funcionando' 
+app.get("/", (req, res) => {
+  res.json({
+    status: "OK",
+    mensaje: "Servidor del Gestor de Turnos funcionando",
   });
 });
 
-app.use('/clases', clasesRoutes);
+app.use("/clases", clasesRoutes);
+app.use("/reservas", reservasRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
