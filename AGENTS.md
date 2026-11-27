@@ -11,8 +11,8 @@ API REST de gestión de turnos (clases y reservas) con Express 5. Código, mensa
 ## Estado actual (no asumir lo contrario)
 
 - La API funciona **en memoria**: los controllers guardan arrays a nivel de módulo (`clases`, `reservas`, `nextId`) y los datos se pierden al reiniciar.
-- `mysql2` está instalado, pero **la DB no está conectada**. `src/config/db.js` está sin trackear y roto (`import { mysql } from 'mysql2/promise'` y `import {'dotenv/config'}` no son válidos).
-- `docker-compose.yml` levanta MySQL 8.4 leyendo `DB_PORT`, `DB_PASSWORD` y `DB_NAME` del `.env`, pero **no** monta `database/schema.sql`: hay que aplicarlo a mano.
+- `src/config/db.js` exporta `pool` (`createPool` de `mysql2/promise`, lee `DB_*` del `.env`, `dateStrings: true`), pero **ningún controller lo usa todavía**: la DB no está conectada a la API.
+- `docker-compose.yml` levanta MySQL 8.4 leyendo `DB_PORT`, `DB_PASSWORD` y `DB_NAME` del `.env`. Requiere Docker Desktop corriendo y **no** monta `database/schema.sql`: hay que aplicarlo a mano.
 
 ## Arquitectura
 
@@ -31,3 +31,7 @@ API REST de gestión de turnos (clases y reservas) con Express 5. Código, mensa
 
 - JSON de la API en camelCase (`cupoMaximo`, `claseId`, `nombreCliente`); el schema SQL usa snake_case (`cupo_maximo`, `clase_id`, `nombre_cliente`). Mapear explícitamente al conectar la DB.
 - Ramas existentes: `main`, `desarrollo`, `valen`, `gabi`. El trabajo actual está en `valen`.
+
+## Flujo de trabajo
+
+- El dueño del repo pide que le preguntes **antes** de modificar archivos. `AGENTS.md` es la excepción: se puede actualizar sin preguntar.
