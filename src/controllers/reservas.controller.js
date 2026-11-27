@@ -1,3 +1,4 @@
+import { pool } from "../config/db.js";
 import { clases } from "./clases.controller.js";
 
 const reservas = [
@@ -23,6 +24,7 @@ const reservas = [
     estado: "cancelada",
   },
 ];
+
 
 let nextId = reservas.length + 1;
 
