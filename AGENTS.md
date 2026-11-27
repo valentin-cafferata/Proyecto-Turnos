@@ -10,20 +10,20 @@ API REST de gestión de turnos (clases y reservas) con Express 5. Código, mensa
 
 ## Estado actual (no asumir lo contrario)
 
-- La API funciona **en memoria**: los controllers guardan arrays a nivel de módulo (`clases`, `reservas`, `nextId`) y los datos se pierden al reiniciar.
-- `src/config/db.js` exporta `pool` (`createPool` de `mysql2/promise`, lee `DB_*` del `.env`, `dateStrings: true`), pero **ningún controller lo usa todavía**: la DB no está conectada a la API.
+- Los dos controllers ya usan MySQL a través de `pool` (`src/config/db.js`: `createPool` de `mysql2/promise`, lee `DB_*` del `.env`, `dateStrings: true`). No quedan datos en memoria.
 - `docker-compose.yml` levanta MySQL 8.4 leyendo `DB_PORT`, `DB_PASSWORD` y `DB_NAME` del `.env`. Requiere Docker Desktop corriendo y **no** monta `database/schema.sql`: hay que aplicarlo a mano.
+- El server local puede estar corriendo con `node src/app.js` (sin recarga automática): reiniciarlo para que tome cambios.
 
 ## Arquitectura
 
 - `src/app.js` es el único entrypoint: monta `/clases` y `/reservas`.
-- `src/routes/*.routes.js` solo mapean CRUD REST a los controllers.
-- `clases.controller.js` exporta el array `clases` además de los handlers; `reservas.controller.js` lo importa para validar existencia, estado activo y cupo. Cambiar o renombrar ese export rompe reservas.
-- Los ids nuevos salen de un contador `nextId`; no derivarlos de `array.length` (provoca colisiones después de un delete).
+- `src/routes/*.routes.js` solo mapean CRUD REST a los controllers. Los updates usan `PATCH` (actualización parcial).
+- `reservas.controller.js` valida la clase con un `SELECT` a `clases` (existe y está activa) y cuenta cupos con `COUNT(*)`; no importa nada de `clases.controller.js`.
+- Los ids los genera MySQL (`AUTO_INCREMENT`); usar `result.insertId`.
 
 ## Reglas de negocio
 
-- Estados de reserva válidos: `confirmada` | `cancelada`.
+- Estados de reserva válidos: `confirmada` | `cancelada`; `fecha` debe ser `YYYY-MM-DD`. Ambos se validan antes del SQL y devuelven 400.
 - El cupo se valida solo en `createReserva`, contando reservas `confirmada`; `updateReserva` no revalida cupo.
 - Defaults al crear clase: `cupoMaximo = 10`, `activo = true`.
 

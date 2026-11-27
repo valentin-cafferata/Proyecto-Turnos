@@ -13,7 +13,7 @@ const router = Router();
 router.get("/", getClases);
 router.get("/:id", getClaseById);
 router.post("/", createClase);
-router.put("/:id", updateClase);
+router.patch("/:id", updateClase);
 router.delete("/:id", deleteClase);
 
 export default router;

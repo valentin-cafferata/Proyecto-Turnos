@@ -1,50 +1,40 @@
 import { pool } from "../config/db.js";
 
-export const clases = [
-  {
-    id: 1,
-    nombre: "Peluqueria",
-    instructor: "gaby",
-    horario: "Lunes 18:00",
-    cupoMaximo: 4,
-    activo: true,
-  },
-  {
-    id: 2,
-    nombre: "Yoga",
-    instructor: "maria",
-    horario: "Martes 19:00",
-    cupoMaximo: 6,
-    activo: true,
-  },
-  {
-    id: 3,
-    nombre: "Spinning",
-    instructor: "juan",
-    horario: "Miércoles 20:00",
-    cupoMaximo: 8,
-    activo: false,
-  },
-];
+const SELECT_CLASE = `
+  SELECT id, nombre, instructor, horario, cupo_maximo AS cupoMaximo, activo
+  FROM clases
+`;
 
-let nextId = clases.length + 1;
+const mapClase = (clase) => ({ ...clase, activo: Boolean(clase.activo) });
 
-export const getClases = (req, res) => {
-  res.status(200).json(clases);
-};
-
-export const getClaseById = (req, res) => {
-  const id = Number(req.params.id);
-  const claseEncontrada = clases.find((clase) => clase.id === id);
-
-  if (!claseEncontrada) {
-    return res.status(404).json({ mensaje: "Clase no encontrada" });
+export const getClases = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`${SELECT_CLASE} ORDER BY id`);
+    res.json(rows.map(mapClase));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "Error al obtener las clases" });
   }
-
-  return res.status(200).json(claseEncontrada);
 };
-// 3. CREATE: Crear una clase nueva (Va DEBAJO de getClaseById)
-export const createClase = (req, res) => {
+
+export const getClaseById = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`${SELECT_CLASE} WHERE id = ?`, [
+      Number(req.params.id),
+    ]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ mensaje: "Clase no encontrada" });
+    }
+
+    res.json(mapClase(rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "Error al obtener la clase" });
+  }
+};
+
+export const createClase = async (req, res) => {
   const { nombre, instructor, horario, cupoMaximo, activo } = req.body || {};
 
   if (!nombre || !instructor || !horario) {
@@ -53,50 +43,81 @@ export const createClase = (req, res) => {
     });
   }
 
-  const nuevaClase = {
-    id: nextId++,
-    nombre,
-    instructor,
-    horario,
-    cupoMaximo: cupoMaximo ?? 10,
-    activo: activo !== undefined ? activo : true,
-  };
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO clases (nombre, instructor, horario, cupo_maximo, activo) VALUES (?, ?, ?, ?, ?)",
+      [
+        nombre,
+        instructor,
+        horario,
+        cupoMaximo ?? 10,
+        activo !== undefined ? Boolean(activo) : true,
+      ],
+    );
 
-  clases.push(nuevaClase);
-  return res.status(201).json({ mensaje: "Clase creada", clase: nuevaClase });
+    const [rows] = await pool.query(`${SELECT_CLASE} WHERE id = ?`, [
+      result.insertId,
+    ]);
+
+    res.status(201).json({ mensaje: "Clase creada", clase: mapClase(rows[0]) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "Error al crear la clase" });
+  }
 };
 
-// 4. UPDATE: Actualizar una clase existente (Va DEBAJO de createClase)
-export const updateClase = (req, res) => {
+export const updateClase = async (req, res) => {
   const id = Number(req.params.id);
-  const claseEncontrada = clases.find((clase) => clase.id === id);
-
-  if (!claseEncontrada) {
-    return res.status(404).json({ mensaje: "Clase no encontrada" });
-  }
-
   const { nombre, instructor, horario, cupoMaximo, activo } = req.body || {};
 
-  claseEncontrada.nombre = nombre || claseEncontrada.nombre;
-  claseEncontrada.instructor = instructor || claseEncontrada.instructor;
-  claseEncontrada.horario = horario || claseEncontrada.horario;
-  claseEncontrada.cupoMaximo = cupoMaximo || claseEncontrada.cupoMaximo;
-  if (activo !== undefined) claseEncontrada.activo = activo;
+  try {
+    const [rows] = await pool.query(`${SELECT_CLASE} WHERE id = ?`, [id]);
 
-  return res
-    .status(200)
-    .json({ mensaje: "Clase actualizada", clase: claseEncontrada });
+    if (rows.length === 0) {
+      return res.status(404).json({ mensaje: "Clase no encontrada" });
+    }
+
+    const actual = mapClase(rows[0]);
+
+    await pool.query(
+      `UPDATE clases
+       SET nombre = ?, instructor = ?, horario = ?, cupo_maximo = ?, activo = ?
+       WHERE id = ?`,
+      [
+        nombre ?? actual.nombre,
+        instructor ?? actual.instructor,
+        horario ?? actual.horario,
+        cupoMaximo ?? actual.cupoMaximo,
+        activo !== undefined ? Boolean(activo) : actual.activo,
+        id,
+      ],
+    );
+
+    const [updated] = await pool.query(`${SELECT_CLASE} WHERE id = ?`, [id]);
+
+    res.json({
+      mensaje: "Clase actualizada",
+      clase: mapClase(updated[0]),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "Error al actualizar la clase" });
+  }
 };
 
-// 5. DELETE: Eliminar una clase (Va DEBAJO de updateClase, al final del archivo)
-export const deleteClase = (req, res) => {
-  const id = Number(req.params.id);
-  const indice = clases.findIndex((clase) => clase.id === id);
+export const deleteClase = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [rows] = await pool.query(`${SELECT_CLASE} WHERE id = ?`, [id]);
 
-  if (indice === -1) {
-    return res.status(404).json({ mensaje: "Clase no encontrada" });
+    if (rows.length === 0) {
+      return res.status(404).json({ mensaje: "Clase no encontrada" });
+    }
+
+    await pool.query("DELETE FROM clases WHERE id = ?", [id]);
+    res.json({ mensaje: "Clase eliminada" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: "Error al eliminar la clase" });
   }
-
-  clases.splice(indice, 1);
-  return res.status(200).json({ mensaje: "Clase eliminada" });
 };
